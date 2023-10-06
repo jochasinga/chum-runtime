@@ -1,3 +1,3 @@
 # chum-runtime
 
-Runtime for the chum compiler.
+Runtime for the [chum compiler](https://github.com/jochasinga/chum).
