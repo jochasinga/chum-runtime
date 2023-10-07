@@ -161,6 +161,31 @@ pub mod tests {
     }
 
     #[test]
+    pub fn test_linking_cmpl() -> Result<()> {
+        let engine = Engine::default();
+        let mut linker = Linker::new(&engine);
+        wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
+        let tests_module = Module::from_file(&engine, "../modules/lib/tests.wat")?;
+        let asm_module = Module::from_file(&engine, "../modules/lib/asm_x86.wat")?;
+        let wasi = WasiCtxBuilder::new()
+            .inherit_stdio()
+            .inherit_args()?
+            .build();
+        let mut store = Store::new(&engine, wasi);
+        let asm = linker.instantiate(&mut store, &asm_module)?;
+        linker.instance(&mut store, "asm_x86", asm)?;
+
+        let tests = linker.instantiate(&mut store, &tests_module)?;
+        let test_cmpl_lt = tests.get_typed_func::<(), i32>(&mut store, "test_cmpl_lt")?;
+        assert_eq!(test_cmpl_lt.call(&mut store, ())?, -1);
+        let test_cmpl_eq = tests.get_typed_func::<(), i32>(&mut store, "test_cmpl_eq")?;
+        assert_eq!(test_cmpl_eq.call(&mut store, ())?, 0);
+        let test_cmpl_mt = tests.get_typed_func::<(), i32>(&mut store, "test_cmpl_mt")?;
+        assert_eq!(test_cmpl_mt.call(&mut store, ())?, 1);
+        Ok(())
+    }
+
+    #[test]
     pub fn test_emit_is_equal_to() -> Result<()> {
         let engine = Engine::default();
         let mut linker = Linker::new(&engine);
