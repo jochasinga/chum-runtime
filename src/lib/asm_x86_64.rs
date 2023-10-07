@@ -3,7 +3,7 @@
 pub mod tests {
     use wasmtime::*;
     use wasmtime_wasi::{WasiCtxBuilder, WasiCtx};
-    use anyhow::Result;
+    use anyhow::{Result, Ok};
 
     fn init_test() -> Result<(Engine, Linker<WasiCtx>, Module, Module, WasiCtx)> {
         let engine = Engine::default();
@@ -157,6 +157,34 @@ pub mod tests {
         let expected: i32 = 4 << 8;
         let val: i32 = test_sall.call(&mut store, ())?;
         assert_eq!(expected, val);
+        Ok(())
+    }
+
+    #[test]
+    pub fn test_setl() -> Result<()> {
+        let engine = Engine::default();
+        let mut linker = Linker::new(&engine);
+        wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
+        let tests_module = Module::from_file(&engine, "../modules/lib/tests.wat")?;
+        let asm_module = Module::from_file(&engine, "../modules/lib/asm_x86.wat")?;
+        let wasi = WasiCtxBuilder::new()
+            .inherit_stdio()
+            .inherit_args()?
+            .build();
+        let mut store = Store::new(&engine, wasi);
+        let asm = linker.instantiate(&mut store, &asm_module)?;
+        linker.instance(&mut store, "asm_x86", asm)?;
+
+        let tests = linker.instantiate(&mut store, &tests_module)?;
+        let test_setl_eq = tests.get_typed_func::<(), i32>(&mut store, "test_setl_eq")?;
+        let val = test_setl_eq.call(&mut store, ())?;
+        assert_eq!(val, 0);
+        let test_setl_mt = tests.get_typed_func::<(), i32>(&mut store, "test_setl_mt")?;
+        let val = test_setl_mt.call(&mut store, ())?;
+        assert_eq!(val, 0);
+        let test_setl_lt = tests.get_typed_func::<(), i32>(&mut store, "test_setl_lt")?;
+        let val = test_setl_lt.call(&mut store, ())?;
+        assert_eq!(val, 0xff);
         Ok(())
     }
 
