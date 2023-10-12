@@ -49,10 +49,10 @@ fn main() -> Result<()> {
 fn show(x: i32) {
     if x & FIXNUM_MASK == FIXNUM_TAG {
         // integer
-        print!("integer: {}", x >> FIXNUM_SHIFT);
+        print!("{}", x >> FIXNUM_SHIFT);
     } else if x & CHAR_MASK == CHAR_TAG {
         // character
-        print!("char: {}", (x >> CHAR_SHIFT) as u8 as char);
+        print!("#\\{}", (x >> CHAR_SHIFT) as u8 as char);
     } else if x & BOOL_MASK == BOOL_TAG {
         if x >> BOOL_SHIFT != 0 {
             print!("#t");
